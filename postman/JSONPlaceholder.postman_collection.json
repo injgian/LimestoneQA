@@ -1,0 +1,184 @@
+{
+  "info": {
+    "_postman_id": "8f3c1d20-4c7a-4b71-9b0e-2f5a6d8e1c11",
+    "name": "JSONPlaceholder \u2014 QA Test Task",
+    "description": "Two GET requests against JSONPlaceholder. Host comes from the {{baseUrl}} environment variable, never hard-coded. Shared assertions live in the collection-level Tests script so each request only adds what is specific to it.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Collection-level tests: run after every request in this collection.",
+          "",
+          "pm.test('Status code is 200', function () {",
+          "    pm.response.to.have.status(200);",
+          "});",
+          "",
+          "pm.test('Response is JSON', function () {",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "});",
+          "",
+          "pm.test('Response time is under 3000 ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "GET users",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/users",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "users"
+          ]
+        },
+        "description": "The full list of users."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "",
+              "pm.test('Body is a non-empty array', function () {",
+              "    pm.expect(body).to.be.an('array').that.is.not.empty;",
+              "});",
+              "",
+              "// Key properties every user object must carry.",
+              "const requiredKeys = ['id', 'name', 'username', 'email', 'address', 'phone', 'company'];",
+              "",
+              "const isEmpty = (value) =>",
+              "    value === undefined ||",
+              "    value === null ||",
+              "    (typeof value === 'string' && value.trim() === '') ||",
+              "    (Array.isArray(value) && value.length === 0) ||",
+              "    (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0);",
+              "",
+              "pm.test('Every user has non-empty key properties', function () {",
+              "    body.forEach((user, index) => {",
+              "        requiredKeys.forEach((key) => {",
+              "            pm.expect(user, `users[${index}] is missing '${key}'`).to.have.property(key);",
+              "            pm.expect(isEmpty(user[key]), `users[${index}].${key} is empty, null or undefined`).to.be.false;",
+              "        });",
+              "    });",
+              "});",
+              "",
+              "pm.test('Every user has a plausible email and a nested address.geo', function () {",
+              "    body.forEach((user, index) => {",
+              "        pm.expect(user.email, `users[${index}].email`).to.match(/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/);",
+              "        pm.expect(user.address, `users[${index}].address`).to.have.property('geo');",
+              "        pm.expect(isEmpty(user.address.geo.lat), `users[${index}].address.geo.lat is empty`).to.be.false;",
+              "        pm.expect(isEmpty(user.address.geo.lng), `users[${index}].address.geo.lng is empty`).to.be.false;",
+              "    });",
+              "});",
+              "",
+              "pm.test('User ids are unique', function () {",
+              "    const ids = body.map((user) => user.id);",
+              "    pm.expect(new Set(ids).size).to.eql(ids.length);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET posts by userId",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/posts?userId={{userId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "posts"
+          ],
+          "query": [
+            {
+              "key": "userId",
+              "value": "{{userId}}"
+            }
+          ]
+        },
+        "description": "The posts belonging to one user. The id comes from the {{userId}} collection variable so the same request can be re-pointed without editing the URL."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "const expectedUserId = Number(pm.variables.get('userId'));",
+              "",
+              "pm.test('Body is a non-empty array', function () {",
+              "    pm.expect(body).to.be.an('array').that.is.not.empty;",
+              "});",
+              "",
+              "const requiredKeys = ['userId', 'id', 'title', 'body'];",
+              "",
+              "const isEmpty = (value) =>",
+              "    value === undefined ||",
+              "    value === null ||",
+              "    (typeof value === 'string' && value.trim() === '');",
+              "",
+              "pm.test('Every post has non-empty key properties', function () {",
+              "    body.forEach((post, index) => {",
+              "        requiredKeys.forEach((key) => {",
+              "            pm.expect(post, `posts[${index}] is missing '${key}'`).to.have.property(key);",
+              "            pm.expect(isEmpty(post[key]), `posts[${index}].${key} is empty, null or undefined`).to.be.false;",
+              "        });",
+              "    });",
+              "});",
+              "",
+              "pm.test('Every post belongs to the requested user', function () {",
+              "    body.forEach((post, index) => {",
+              "        pm.expect(post.userId, `posts[${index}].userId`).to.eql(expectedUserId);",
+              "    });",
+              "});",
+              "",
+              "pm.test('Post ids are positive integers and unique', function () {",
+              "    const ids = body.map((post) => post.id);",
+              "    ids.forEach((id) => pm.expect(Number.isInteger(id) && id > 0).to.be.true);",
+              "    pm.expect(new Set(ids).size).to.eql(ids.length);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

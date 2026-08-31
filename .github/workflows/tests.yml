@@ -1,0 +1,76 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api:
+    name: API tests (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore
+      - run: dotnet build --no-restore --configuration Release
+      - name: Run API tests
+        run: >
+          dotnet test --no-build --configuration Release
+          --filter "Category=API"
+          --logger "trx;LogFileName=api.trx"
+          --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-results
+          path: TestResults/
+
+  ui-smoke:
+    name: UI smoke (blocking)
+    runs-on: ubuntu-latest
+    needs: api
+    env:
+      UI__HEADLESS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet restore
+      - run: dotnet build --no-restore --configuration Release
+      - name: Run UI smoke tests
+        run: >
+          dotnet test --no-build --configuration Release
+          --filter "Category=UI&Category=Smoke"
+          --logger "trx;LogFileName=ui-smoke.trx"
+          --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-smoke-results
+          path: |
+            TestResults/
+            **/screenshots/
+
+  ui-full:
+    name: UI regression (non-blocking, nightly)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      UI__HEADLESS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet test --filter "Category=UI" --logger "trx;LogFileName=ui-full.trx" --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-full-results
+          path: TestResults/
