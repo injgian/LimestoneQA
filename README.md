@@ -1,6 +1,6 @@
 # QA Test Task — Limestone Digital
 
-A small C# / .NET 8 / xUnit test framework with three UI checks against SauceDemo and five API checks
+A small C# / .NET 10.0 / xUnit test framework with three UI checks against SauceDemo and five API checks
 against JSONPlaceholder, plus a Postman collection and the SQL query.
 
 Written to be read rather than to be big. The reasoning is in **Design decisions** and
