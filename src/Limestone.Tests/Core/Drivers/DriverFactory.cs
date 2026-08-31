@@ -47,6 +47,7 @@ public static class DriverFactory
                 chrome.AddArgument("--disable-dev-shm-usage");  // avoids /dev/shm exhaustion in Docker
                 chrome.AddArgument("--disable-gpu");
                 // SauceDemo triggers Chrome's leaked-password dialog on login; it steals focus.
+                chrome.AddUserProfilePreference("profile.password_manager_leak_detection", false);
                 chrome.AddUserProfilePreference("credentials_enable_service", false);
                 chrome.AddUserProfilePreference("profile.password_manager_enabled", false);
                 chrome.AddArgument("--disable-search-engine-choice-screen");
